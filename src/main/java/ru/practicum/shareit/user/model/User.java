@@ -1,6 +1,5 @@
 package ru.practicum.shareit.user.model;
 
-import jakarta.validation.constraints.*;
 import lombok.Builder;
 import lombok.Data;
 
