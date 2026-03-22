@@ -1,39 +1,17 @@
 package ru.practicum.shareit.user.dao;
 
-
-import org.springframework.stereotype.Repository;
 import ru.practicum.shareit.user.model.User;
+import java.util.List;
+import java.util.Optional;
 
-import java.util.*;
+public interface UserRepository {
+    User save(User user);
 
-@Repository
-public class UserRepository {
-    private final Map<Long, User> users = new HashMap<>();
-    private Long idCounter = 1L;
+    Optional<User> findById(Long id);
 
-    public User save(User user) {
-        if (user.getId() == null) {
-            user.setId(idCounter++);
-        }
-        users.put(user.getId(), user);
-        return user;
-    }
+    List<User> findAll();
 
-    public Optional<User> findById(Long id) {
-        return Optional.ofNullable(users.get(id));
-    }
+    void deleteById(Long id);
 
-    public List<User> findAll() {
-        return new ArrayList<>(users.values());
-    }
-
-    public void deleteById(Long id) {
-        users.remove(id);
-    }
-
-    public boolean existsByEmail(String email, Long userId) {
-        return users.values().stream()
-                .anyMatch(u -> u.getEmail().equalsIgnoreCase(email)
-                        && !Objects.equals(u.getId(), userId));
-    }
+    boolean existsByEmail(String email, Long userId);
 }

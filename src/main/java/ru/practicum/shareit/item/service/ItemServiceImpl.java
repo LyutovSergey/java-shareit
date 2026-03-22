@@ -23,37 +23,32 @@ public class ItemServiceImpl implements ItemService {
     private final UserRepository userRepository;
 
     @Override
-    public ItemDto create(Long userId, Item item) {
-        log.info("Создание вещи '{}' для пользователя с id: {}", item.getName(), userId);
-
-        User owner = userRepository.findById(userId)
-                .orElseThrow(() -> {
-                    log.warn("Пользователь с id {} не найден", userId);
-                    return new NotFoundException("Пользователь не найден");
-                });
-
+    public ItemDto create(Long userId, ItemDto itemDto) {
+        log.info("Создание вещи '{}' для пользователя с id: {}", itemDto.getName(), userId);
+        User owner = findUserByIdOrException(userId);
+        Item item = ItemMapper.toItem(itemDto);
         item.setOwner(owner);
         Item savedItem = itemRepository.save(item);
-
         log.debug("{}", savedItem); // Вывод объекта
-
         return ItemMapper.toItemDto(savedItem);
     }
 
     @Override
-    public ItemDto update(Long userId, Long itemId, Item item) {
+    public ItemDto update(Long userId, Long itemId, ItemDto itemDto) {
         log.info("Обновление вещи id: {} пользователем id: {}", itemId, userId);
-
-        Item itemInRepository = findByIdOrException(itemId);
+        findUserByIdOrException(userId);
+        Item itemInRepository = findItemByIdOrException(itemId);
 
         if (!itemInRepository.getOwner().getId().equals(userId)) {
             log.warn("Доступ запрещен для пользователя id {}", userId);
             throw new ForbiddenException("Редактировать может только владелец");
         }
 
-        if (item.getName() != null) itemInRepository.setName(item.getName());
-        if (item.getDescription() != null) itemInRepository.setDescription(item.getDescription());
-        if (item.getAvailable() != null) itemInRepository.setAvailable(item.getAvailable());
+        if (itemDto.getName() != null && !itemDto.getName().isBlank())
+            itemInRepository.setName(itemDto.getName());
+        if (itemDto.getDescription() != null && !itemDto.getDescription().isBlank())
+            itemInRepository.setDescription(itemDto.getDescription());
+        if (itemDto.getAvailable() != null) itemInRepository.setAvailable(itemDto.getAvailable());
 
         Item updatedItem = itemRepository.save(itemInRepository);
         log.debug("{}", updatedItem); // Вывод объекта
@@ -64,7 +59,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDto getById(Long itemId) {
         log.info("Получение вещи по id: {}", itemId);
-        Item item = findByIdOrException(itemId);
+        Item item = findItemByIdOrException(itemId);
         log.debug("{}", item); // Вывод объекта
         return ItemMapper.toItemDto(item);
     }
@@ -72,11 +67,8 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemDto> getAllByOwner(Long userId) {
         log.info("Получение всех вещей владельца id: {}", userId);
-
-        List<Item> items = itemRepository.findAll().stream()
-                .filter(item -> item.getOwner().getId().equals(userId))
-                .toList();
-
+        findUserByIdOrException(userId);
+        List<Item> items = itemRepository.findAllByOwner(userId);
         log.debug("{}", items); // Вывод списка объектов
         return items.stream().map(ItemMapper::toItemDto).toList();
     }
@@ -89,21 +81,25 @@ public class ItemServiceImpl implements ItemService {
             return Collections.emptyList();
         }
 
-        List<Item> results = itemRepository.findAll().stream()
-                .filter(Item::getAvailable)
-                .filter(item -> item.getName().toLowerCase().contains(text.toLowerCase())
-                        || item.getDescription().toLowerCase().contains(text.toLowerCase()))
-                .toList();
+        List<Item> results = itemRepository.search(text);
 
         log.debug("{}", results); // Вывод найденных объектов
         return results.stream().map(ItemMapper::toItemDto).toList();
     }
 
-    private Item findByIdOrException(Long itemId) {
+    private Item findItemByIdOrException(Long itemId) {
         return itemRepository.findById(itemId)
                 .orElseThrow(() -> {
                     log.warn("Вещь с id {} не найдена ", itemId);
-                    return new NotFoundException("Вещь не найдена");
+                    return new NotFoundException("Вещь с id " + itemId + " не найдена");
+                });
+    }
+
+    private User findUserByIdOrException(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> {
+                    log.warn("Пользователь с id {} не найдена ", userId);
+                    return new NotFoundException("Пользователь с id " + userId + " не найден");
                 });
     }
 }

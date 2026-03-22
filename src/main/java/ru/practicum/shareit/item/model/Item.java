@@ -14,14 +14,9 @@ import ru.practicum.shareit.user.model.User;
 @Builder(toBuilder = true)
 public class Item {
     private Long id;
-
-    @NotBlank(message = "Имя вещи не может быть пустым")
     private String name;
-    @NotBlank(message = "Описание вещи не может быть пустым")
     private String description;
-
-    @NotNull
-    private Boolean available; // статус доступности
-    private User owner;        // владелец
-    private ItemRequest request; // ссылка на запрос, если создано по запросу
+    private Boolean available;
+    private User owner;
+    private ItemRequest request;
 }

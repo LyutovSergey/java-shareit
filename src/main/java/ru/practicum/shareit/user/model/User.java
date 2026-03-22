@@ -12,11 +12,6 @@ import lombok.Data;
 @Builder(toBuilder = true)
 public class User {
     private Long id;
-
-    @NotBlank(message = "name не может быть пустым")
     private String name;
-
-    @Email(message = "Некорректный email")
-    @NotBlank(message = "email не может быть пустым")
     private String email;
 }

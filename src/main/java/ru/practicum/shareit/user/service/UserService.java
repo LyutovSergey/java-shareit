@@ -6,9 +6,9 @@ import ru.practicum.shareit.user.model.User;
 import java.util.List;
 
 public interface UserService {
-    UserDto create(User user);
+    UserDto create(UserDto userDto);
 
-    UserDto update(Long userId, User user);
+    UserDto update(Long userId, UserDto userDto);
 
     UserDto getById(Long userId);
 
