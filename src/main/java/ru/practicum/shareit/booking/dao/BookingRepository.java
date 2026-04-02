@@ -43,4 +43,11 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             "  or (?2 = 'REJECTED' and b.status = 'REJECTED')) " +
             "order by b.start desc")
     List<Booking> findAllByOwnerFiltered(Long ownerId, String state, LocalDateTime now);
+
+    @Query("SELECT b FROM Booking b " +
+            "JOIN FETCH b.item i " +
+            "WHERE i.id IN ?1"+
+            "AND b.status = 'APPROVED' " +
+            "order by b.start desc")
+    List<Booking> findAllByItemIds(List<Long> itemIds);
 }

@@ -136,9 +136,8 @@ public class ItemServiceImpl implements ItemService {
 
         // 3. Маппим DTO в сущность, сохраняем и возвращаем DTO обратно
         Comment comment = CommentMapper.toComment(commentDto, item, author);
-        comment.setCreated(now); // Устанавливаем время создания здесь
-
         Comment savedComment = commentRepository.save(comment);
+
         log.debug("Комментарий сохранен: {}", savedComment);
 
         return CommentMapper.toDto(savedComment);

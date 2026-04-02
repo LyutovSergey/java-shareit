@@ -29,30 +29,24 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
-    private final UserRepository userRepository;
     private final ItemService itemService;
     private final UserService userService;
 
     @Override
     @Transactional
-    public BookingResponseDto create(Long userId, BookingDto dto) {
-        log.info("Создание бронирования пользователь {}, бронь {}", userId, dto);
+    public BookingResponseDto create(Long userId, BookingDto bookingDto) {
+        log.info("Создание бронирования пользователь {}, бронь {}", userId, bookingDto);
         User user = userService.findByIdOrException(userId);
-        Item item = itemService.findItemByIdOrException(dto.getItemId());
+        Item item = itemService.findItemByIdOrException(bookingDto.getItemId());
 
         if (!item.getAvailable()) throw new BadRequestException("Вещь недоступна");
         if (item.getOwner().getId().equals(userId)) throw new BadRequestException("Нельзя бронировать свою вещь");
-        if (dto.getEnd().isBefore(dto.getStart()) || dto.getEnd().isEqual(dto.getStart())) {
+        if (bookingDto.getEnd().isBefore(bookingDto.getStart()) || bookingDto.getEnd().isEqual(bookingDto.getStart())) {
             throw new BadRequestException("Неверные даты бронирования");
         }
 
-        Booking booking = Booking.builder()
-                .start(dto.getStart())
-                .end(dto.getEnd())
-                .item(item)
-                .booker(user)
-                .status(BookingStatus.WAITING)
-                .build();
+        Booking booking = BookingMapper.toNewBooking(bookingDto, item, user);
+
         return BookingMapper.toResponseDto(bookingRepository.save(booking));
     }
 
