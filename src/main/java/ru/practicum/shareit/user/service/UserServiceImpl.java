@@ -96,6 +96,7 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    @Override
     public User findByIdOrException(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> {

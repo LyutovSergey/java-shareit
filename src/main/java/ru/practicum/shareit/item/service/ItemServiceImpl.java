@@ -17,8 +17,8 @@ import ru.practicum.shareit.item.mapper.CommentMapper;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.user.dao.UserRepository;
 import ru.practicum.shareit.user.model.User;
+import ru.practicum.shareit.user.service.UserService;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -30,7 +30,7 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
-    private final UserRepository userRepository;
+    private final UserService userService;
     private final BookingRepository bookingRepository;
     private final CommentRepository commentRepository;
 
@@ -38,7 +38,7 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     public ItemDto create(Long userId, ItemDto itemDto) {
         log.info("Создание вещи '{}' для пользователя с id: {}", itemDto.getName(), userId);
-        User owner = findUserByIdOrException(userId);
+        User owner = userService.findByIdOrException(userId);
         Item item = ItemMapper.toItem(itemDto);
         item.setOwner(owner);
         Item savedItem = itemRepository.save(item);
@@ -50,7 +50,7 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     public ItemDto update(Long userId, Long itemId, ItemDto itemDto) {
         log.info("Обновление вещи id: {} пользователем id: {}", itemId, userId);
-        findUserByIdOrException(userId);
+        userService.findByIdOrException(userId);
         Item itemInRepository = findItemByIdOrException(itemId);
 
         if (!itemInRepository.getOwner().getId().equals(userId)) {
@@ -90,7 +90,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemDto> getAllByOwner(Long userId) {
         log.info("Получение всех вещей владельца id: {}", userId);
-        findUserByIdOrException(userId);
+        userService.findByIdOrException(userId);
         List<Item> items = itemRepository.findAllByOwnerId(userId);
         log.debug("{}", items); // Вывод списка объектов
         return items.stream().map(ItemMapper::toItemDto).toList();
@@ -131,7 +131,7 @@ public class ItemServiceImpl implements ItemService {
         }
 
         // 2. Находим автора и вещь
-        User author = findUserByIdOrException(userId);
+        User author = userService.findByIdOrException(userId);
         Item item = findItemByIdOrException(itemId);
 
         // 3. Маппим DTO в сущность, сохраняем и возвращаем DTO обратно
@@ -145,19 +145,12 @@ public class ItemServiceImpl implements ItemService {
     }
 
 
-    private Item findItemByIdOrException(Long itemId) {
+    @Override
+    public Item findItemByIdOrException(Long itemId) {
         return itemRepository.findById(itemId)
                 .orElseThrow(() -> {
                     log.warn("Вещь с id {} не найдена ", itemId);
                     return new NotFoundException("Вещь с id " + itemId + " не найдена");
-                });
-    }
-
-    private User findUserByIdOrException(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> {
-                    log.warn("Пользователь с id {} не найдена ", userId);
-                    return new NotFoundException("Пользователь с id " + userId + " не найден");
                 });
     }
 

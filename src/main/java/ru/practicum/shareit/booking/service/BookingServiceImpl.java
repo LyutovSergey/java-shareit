@@ -14,8 +14,8 @@ import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.exception.BadRequestException;
 import ru.practicum.shareit.exception.ForbiddenException;
 import ru.practicum.shareit.exception.NotFoundException;
-import ru.practicum.shareit.item.dao.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.item.service.ItemService;
 import ru.practicum.shareit.user.dao.UserRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
@@ -30,20 +30,18 @@ import java.util.List;
 public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
-    private final ItemRepository itemRepository;
+    private final ItemService itemService;
     private final UserService userService;
 
     @Override
     @Transactional
     public BookingResponseDto create(Long userId, BookingDto dto) {
         log.info("Создание бронирования пользователь {}, бронь {}", userId, dto);
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
-        Item item = itemRepository.findById(dto.getItemId())
-                .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
+        User user = userService.findByIdOrException(userId);
+        Item item = itemService.findItemByIdOrException(dto.getItemId());
 
         if (!item.getAvailable()) throw new BadRequestException("Вещь недоступна");
-        if (item.getOwner().getId().equals(userId)) throw new NotFoundException("Нельзя бронировать свою вещь");
+        if (item.getOwner().getId().equals(userId)) throw new BadRequestException("Нельзя бронировать свою вещь");
         if (dto.getEnd().isBefore(dto.getStart()) || dto.getEnd().isEqual(dto.getStart())) {
             throw new BadRequestException("Неверные даты бронирования");
         }
@@ -62,8 +60,7 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public BookingResponseDto approve(Long userId, Long bookingId, Boolean approved) {
         log.info("Запрос подтверждения бронирования. Пользователь {}, бронь {}, статус {}", userId, bookingId, approved);
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new NotFoundException("Бронирование не найдено"));
+        Booking booking = findByIdOrException(bookingId);
         if (!booking.getItem().getOwner().getId().equals(userId)) {
             throw new ForbiddenException("Только владелец может подтвердить бронирование");
         }
@@ -78,8 +75,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public BookingResponseDto getById(Long userId, Long bookingId) {
         log.info("Запрос информации о  бронировании. Пользователь {}, бронь {}", userId, bookingId);
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new NotFoundException("Бронирование не найдено"));
+        Booking booking = findByIdOrException(bookingId);
         if (!booking.getBooker().getId().equals(userId) &&
                 !booking.getItem().getOwner().getId().equals(userId)) {
             throw new NotFoundException("Нет прав на просмотр");
@@ -114,6 +110,15 @@ public class BookingServiceImpl implements BookingService {
             log.warn("Фильтр статуса некорректный: {} ", stateStr);
             return new BadRequestException("Статус  " + stateStr + " некорректный");
         });
+    }
+
+    private Booking findByIdOrException(Long bookingId) {
+        return bookingRepository.findById(bookingId)
+                .orElseThrow(() -> {
+                    log.warn("Бронирование с id {} не найдено", bookingId);
+                    return new NotFoundException("Бронирование с id " + bookingId + " не найдено");
+                });
+
     }
 
 }
