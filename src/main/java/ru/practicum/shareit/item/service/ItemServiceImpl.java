@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dao.BookingRepository;
+import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.exception.BadRequestException;
 import ru.practicum.shareit.exception.ForbiddenException;
@@ -23,6 +24,8 @@ import ru.practicum.shareit.user.service.UserService;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -81,7 +84,7 @@ public class ItemServiceImpl implements ItemService {
                 .map(CommentMapper::toDto).toList());
 
         // Бронирования добавляем только если запрашивает владелец
-        if (item.getOwner().getId().equals(userId)) {
+         if (item.getOwner().getId().equals(userId)) {
             setBookings(itemDto);
         }
         return itemDto;
@@ -90,10 +93,37 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemDto> getAllByOwner(Long userId) {
         log.info("Получение всех вещей владельца id: {}", userId);
+
         userService.findByIdOrException(userId);
+
         List<Item> items = itemRepository.findAllByOwnerId(userId);
-        log.debug("{}", items); // Вывод списка объектов
-        return items.stream().map(ItemMapper::toItemDto).toList();
+        List<Long> itemIds = items.stream().map(Item::getId).toList();
+        List<Booking> allBookings = bookingRepository.findAllByItemIds(itemIds);
+        List<Comment> allComments = commentRepository.findAllByItemIdIn(itemIds);
+        Map<Long, List<Comment>> commentsMap = allComments.stream()
+                .collect(Collectors.groupingBy(c -> c.getItem().getId()));
+        Map<Long, List<Booking>> bookingsMap = allBookings.stream()
+                .collect(Collectors.groupingBy(booking -> booking.getItem().getId()));
+
+        List<ItemDto> itemDtos = items.stream()
+                .map(item -> {
+                    ItemDto itemDto = ItemMapper.toItemDto(item);
+                    List<Booking> itemBookings = bookingsMap.getOrDefault(item.getId(), List.of());
+                    setBookingsForList(itemDto, itemBookings);
+
+                    List<Comment> itemComments = commentsMap.getOrDefault(item.getId(), List.of());
+                    itemDto.setComments(itemComments.stream()
+                            .map(CommentMapper::toDto)
+                            .toList());
+
+                    return itemDto;
+                })
+                .toList(); // Собираем все обработанные DTO в итоговый список
+
+
+
+        log.debug("{}", itemDtos); // Вывод списка объектов
+        return itemDtos;
     }
 
     @Override
@@ -169,5 +199,21 @@ public class ItemServiceImpl implements ItemService {
                         dto.getId(), BookingStatus.APPROVED, now)
                 .map(b -> new ItemDto.BookingShortDto(b.getId(), b.getBooker().getId()))
                 .orElse(null));
+    }
+
+    private void setBookingsForList(ItemDto dto, List<Booking> bookings) {
+        LocalDateTime now = LocalDateTime.now();
+        Booking last = bookings.stream()
+                .filter(b -> !b.getStart().isAfter(now))
+                .reduce((first, second) -> second) // Список отсортирован по ASC, берем последний подходящий
+                .orElse(null);
+
+        Booking next = bookings.stream()
+                .filter(b -> b.getStart().isAfter(now))
+                .findFirst()
+                .orElse(null);
+
+        if (last != null) dto.setLastBooking(new ItemDto.BookingShortDto(last.getId(), last.getBooker().getId()));
+        if (next != null) dto.setNextBooking(new ItemDto.BookingShortDto(next.getId(), next.getBooker().getId()));
     }
 }

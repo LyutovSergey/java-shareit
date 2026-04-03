@@ -46,8 +46,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     @Query("SELECT b FROM Booking b " +
             "JOIN FETCH b.item i " +
-            "WHERE i.id IN ?1"+
-            "AND b.status = 'APPROVED' " +
-            "order by b.start desc")
+            " WHERE i.id IN ?1" +
+            " AND b.status = 'APPROVED' " +
+            " order by b.start asc")
     List<Booking> findAllByItemIds(List<Long> itemIds);
 }
