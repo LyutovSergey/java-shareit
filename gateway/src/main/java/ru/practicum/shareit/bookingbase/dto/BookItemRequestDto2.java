@@ -1,4 +1,4 @@
-package ru.practicum.shareit.booking.dto;
+package ru.practicum.shareit.bookingbase.dto;
 
 import java.time.LocalDateTime;
 
@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class BookItemRequestDto {
+public class BookItemRequestDto2 {
 	private long itemId;
 	@FutureOrPresent
 	private LocalDateTime start;
