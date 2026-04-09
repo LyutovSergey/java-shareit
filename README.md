@@ -1,2 +1,2 @@
 # java-shareit
-Template repository for Shareit project.
+Студент Лютов Сергей, 69 кагорта

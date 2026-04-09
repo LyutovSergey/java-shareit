@@ -13,7 +13,7 @@ import java.util.List;
  * TODO Sprint add-item-requests.
  */
 @Data
-@Builder
+@Builder(toBuilder = true)
 @AllArgsConstructor
 @NoArgsConstructor
 public class ItemRequestDto {
