@@ -8,6 +8,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.booking.dto.BookingDto;
+import ru.practicum.shareit.exception.BadRequestException;
 
 /**
  * TODO Sprint add-bookings.
@@ -23,7 +24,10 @@ public class BookingController {
     @PostMapping
     public ResponseEntity<Object> create(@RequestHeader("X-Sharer-User-Id") Long userId,
                                          @RequestBody @Valid BookingDto bookingDto) {
-        log.info("Gateway: создание бронирования для пользователя {}", userId);
+        log.info("Gateway: создание бронирования {} для пользователя {}", bookingDto, userId);
+        if (bookingDto.getEnd().isBefore(bookingDto.getStart()) || bookingDto.getEnd().isEqual(bookingDto.getStart())) {
+            throw new BadRequestException("Неверные даты бронирования");
+        }
         return bookingClient.create(userId, bookingDto);
     }
 

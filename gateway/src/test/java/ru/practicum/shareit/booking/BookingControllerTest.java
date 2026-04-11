@@ -10,15 +10,14 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.shareit.booking.dto.BookingDto;
-
 import java.time.LocalDateTime;
 import java.util.List;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = BookingController.class)
@@ -132,5 +131,24 @@ class BookingControllerTest {
                 .andExpect(status().isOk());
 
         verify(bookingClient).getAllByOwner(1L, "ALL");
+    }
+
+    @Test
+    void create_shouldReturnBadRequestWhenEndIsBeforeStart() throws Exception {
+
+        BookingDto invalidBookingDto = new BookingDto();
+        invalidBookingDto.setItemId(1L);
+        invalidBookingDto.setStart(LocalDateTime.now().plusDays(1)); // Прошлое
+        invalidBookingDto.setEnd(LocalDateTime.now().minusDays(1));
+
+        mvc.perform(post("/bookings")
+                        .header("X-Sharer-User-Id", 1L)
+                        .content(mapper.writeValueAsString(invalidBookingDto))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Ошибка валидации данных"));
+
+        // Проверяем, что запрос НЕ ушел дальше в BookingClient
+        verifyNoInteractions(bookingClient);
     }
 }

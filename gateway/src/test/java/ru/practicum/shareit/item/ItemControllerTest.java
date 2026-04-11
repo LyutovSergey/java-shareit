@@ -16,8 +16,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = ItemController.class)
 class ItemControllerTest {
@@ -30,7 +29,6 @@ class ItemControllerTest {
 
     @MockBean
     private ItemClient itemClient;
-
     private final String userIdHeader = "X-Sharer-User-Id";
 
     @Test
@@ -145,6 +143,17 @@ class ItemControllerTest {
                         .content(mapper.writeValueAsString(invalidComment))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(itemClient);
+    }
+
+    @Test
+    void search_shouldReturnEmptyListWhenTextIsBlank() throws Exception {
+        mvc.perform(get("/items/search")
+                        .header(userIdHeader, 1L)
+                        .param("text", "  "))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[]"));
 
         verifyNoInteractions(itemClient);
     }

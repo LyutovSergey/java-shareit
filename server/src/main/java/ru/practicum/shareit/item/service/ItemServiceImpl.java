@@ -22,9 +22,7 @@ import ru.practicum.shareit.request.dao.ItemRequestRepository;
 import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
-
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -137,10 +135,6 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemDto> search(String text) {
         log.info("Поиск вещей по запросу: '{}'", text);
-
-        if (text == null || text.isBlank()) {
-            return Collections.emptyList();
-        }
 
         List<Item> results = itemRepository.search(text);
 

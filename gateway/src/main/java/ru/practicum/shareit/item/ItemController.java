@@ -8,9 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-
 import jakarta.validation.Valid;
+import java.util.List;
 
 /**
  * Контроллер для работы с вещами на стороне Gateway.
@@ -55,6 +54,10 @@ public class ItemController {
     public ResponseEntity<Object> search(@RequestHeader("X-Sharer-User-Id") Long userId,
                                          @RequestParam String text) {
         log.info("Gateway: поиск вещей по запросу: {}", text);
+        if (text == null || text.isBlank()) {
+            return ResponseEntity.ok()
+                    .body(List.of());
+        }
         return itemClient.search(userId, text);
     }
 

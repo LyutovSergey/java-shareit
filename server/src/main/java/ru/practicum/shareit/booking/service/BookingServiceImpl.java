@@ -40,12 +40,8 @@ public class BookingServiceImpl implements BookingService {
 
         if (!item.getAvailable()) throw new BadRequestException("Вещь недоступна");
         if (item.getOwner().getId().equals(userId)) throw new BadRequestException("Нельзя бронировать свою вещь");
-        if (bookingDto.getEnd().isBefore(bookingDto.getStart()) || bookingDto.getEnd().isEqual(bookingDto.getStart())) {
-            throw new BadRequestException("Неверные даты бронирования");
-        }
 
         Booking booking = BookingMapper.toNewBooking(bookingDto, item, user);
-
         return BookingMapper.toResponseDto(bookingRepository.save(booking));
     }
 
